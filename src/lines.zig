@@ -1,3 +1,6 @@
+/// This module provides the functionality to count the lines in a single source
+/// file.
+
 const std = @import("std");
 const fs = std.fs;
 const heap = std.heap;
