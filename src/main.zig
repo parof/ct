@@ -7,11 +7,12 @@ const lines = @import("./lines.zig");
 const source = @import("./source.zig");
 
 pub fn main() !void {
-    var out_buffer: [100]u8 = undefined;
-    const realpath = try fs.Dir.realpath(fs.cwd(), ".", &out_buffer);
-    try source.main(realpath);
-    if (false) {
-        lines_main();
+    // var out_buffer: [10000]u8 = undefined;
+    // _ = out_buffer;
+    // const realpath = try fs.Dir.realpath(fs.cwd(), ".", &out_buffer);
+    // try source.main(realpath);
+    if (true) {
+        _ = try lines_main();
     }
 }
 

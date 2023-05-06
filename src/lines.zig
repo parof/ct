@@ -22,8 +22,8 @@ const CountLinesTask = struct {
     first_byte_is_utf8_synchronized: bool
 };
 
-pub fn run(config: args.CountLinesConfig) !void {
-    for (config.file_names.items) |file_name| {
+pub fn run(config: args.Config) !void {
+    for (config.input_paths.items) |file_name| {
         const lines = try runFile(file_name, config.threads, config.chunks_size);
         try std.io.getStdOut().writer().print("{d}: {s}\n", .{ lines, file_name });
     }

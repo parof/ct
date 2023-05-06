@@ -11,13 +11,23 @@ const THREADS_SHORT_FLAG: []const u8 = "-t";
 const CHUNKS_LONG_FLAG: []const u8 = "--chunks-size";
 const CHUNKS_SHORT_FLAG: []const u8 = "-c";
 
-pub const CountLinesConfig = struct {
-    file_names: std.ArrayList([]const u8),
+/// Configuration for the execution of `ct`.
+pub const Config = struct {
+    input_paths: std.ArrayList([]const u8),
     threads: u64 = DEFAULT_NUMBER_OF_THREADS,
     chunks_size: u64 = DEFAULT_CHUNKS_SIZE,
 
-    pub fn deinit(self: CountLinesConfig) void {
-        self.file_names.deinit();
+    const Self = @This();
+
+    /// Deinit with `config.deinit()`.
+    pub fn init(allocator: mem.Allocator) Self {
+        return Config {
+            .input_paths = std.ArrayList([]const u8).init(allocator),
+        };
+    }
+
+    pub fn deinit(self: Config) void {
+        self.input_paths.deinit();
     }
 };
 
@@ -37,43 +47,61 @@ pub const ParseArgsError = error{
     WantsHelp
 };
 
-pub fn parse_args(allocator: mem.Allocator) ParseArgsError!CountLinesConfig {
-    var threads: u64 = DEFAULT_NUMBER_OF_THREADS;
-    var chunks_size: u64 = DEFAULT_CHUNKS_SIZE;
-    var file_names = std.ArrayList([]const u8).init(allocator);
-    errdefer file_names.deinit();
+/// Parses the arguments provided in `argv`. The caller owns the result
+/// configuration, and has to deallocate it with `deinit`.
+pub fn parse_args(allocator: mem.Allocator) ParseArgsError!Config {
+    // Values for the configuration.
+    var config = Config.init(allocator);
+    errdefer config.deinit();
+
+    // Prepare the iterator for the arguments.
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     var alloc = arena.allocator();
     defer arena.deinit();
     var iter = std.process.argsWithAllocator(alloc) catch unreachable;
     defer iter.deinit();
     _ = iter.next(); // Skip the name of the program.
+
     while (iter.next()) |arg| {
-        if (mem.eql(u8, arg, HELP_LONG_FLAG) or mem.eql(u8, arg, HELP_SHORT_FLAG)) {
+        if (argIsHelp(arg)) {
             return error.WantsHelp;
-        } else if (mem.eql(u8, arg, THREADS_LONG_FLAG) or mem.eql(u8, arg, THREADS_SHORT_FLAG)) {
+        } else if (argIsThreads(arg)) {
             // Set the threads.
-            threads = try parse_numeric_arg(&iter, error.ThreadOptionExpectsArgument, error.ThreadOptionExpectsInteger);
-        } else if (mem.eql(u8, arg, CHUNKS_LONG_FLAG) or mem.eql(u8, arg, CHUNKS_SHORT_FLAG)) {
+            config.threads = try parseNumericArg(
+                &iter, 
+                error.ThreadOptionExpectsArgument, 
+                error.ThreadOptionExpectsInteger);
+        } else if (argIsChunk(arg)) {
             // Set the chunks.
-            chunks_size = try parse_numeric_arg(&iter, error.ChunksSizeOptionExpectsArgument, error.ChunksSizeOptionExpectsInteger);
+            config.chunks_size = try parseNumericArg(
+                &iter, 
+                error.ChunksSizeOptionExpectsArgument, 
+                error.ChunksSizeOptionExpectsInteger);
         } else {
             // Set the name of the file.
-            file_names.append(arg) catch std.process.exit(1);
+            config.input_paths.append(arg) catch std.process.exit(1);
         }
     }
-    if (file_names.items.len == 0) {
+
+    if (config.input_paths.items.len == 0) {
         return error.FilePathNotProvided;
-    } else {
-        return CountLinesConfig{
-            .file_names = file_names,
-            .threads = threads,
-            .chunks_size = chunks_size,
-        };
     }
+    return config;
 }
 
-fn parse_numeric_arg(
+fn argIsHelp(arg: []const u8) bool {
+    return mem.eql(u8, arg, HELP_LONG_FLAG) or mem.eql(u8, arg, HELP_SHORT_FLAG);
+}
+
+fn argIsThreads(arg: []const u8) bool {
+    return mem.eql(u8, arg, THREADS_LONG_FLAG) or mem.eql(u8, arg, THREADS_SHORT_FLAG);
+}
+
+fn argIsChunk(arg: []const u8) bool {
+    return mem.eql(u8, arg, CHUNKS_LONG_FLAG) or mem.eql(u8, arg, CHUNKS_SHORT_FLAG);
+}
+
+fn parseNumericArg(
         iter: *std.process.ArgIterator, 
         missing_arg_error: ParseArgsError, 
         parse_integer_error: ParseArgsError
