@@ -11,12 +11,12 @@ const THREADS_SHORT_FLAG: []const u8 = "-t";
 const CHUNKS_LONG_FLAG: []const u8 = "--chunks-size";
 const CHUNKS_SHORT_FLAG: []const u8 = "-c";
 
-pub const Config = struct {
+pub const CountLinesConfig = struct {
     file_names: std.ArrayList([]const u8),
     threads: u64 = DEFAULT_NUMBER_OF_THREADS,
     chunks_size: u64 = DEFAULT_CHUNKS_SIZE,
 
-    pub fn deinit(self: Config) void {
+    pub fn deinit(self: CountLinesConfig) void {
         self.file_names.deinit();
     }
 };
@@ -37,7 +37,7 @@ pub const ParseArgsError = error{
     WantsHelp
 };
 
-pub fn parse_args(allocator: mem.Allocator) ParseArgsError!Config {
+pub fn parse_args(allocator: mem.Allocator) ParseArgsError!CountLinesConfig {
     var threads: u64 = DEFAULT_NUMBER_OF_THREADS;
     var chunks_size: u64 = DEFAULT_CHUNKS_SIZE;
     var file_names = std.ArrayList([]const u8).init(allocator);
@@ -65,7 +65,7 @@ pub fn parse_args(allocator: mem.Allocator) ParseArgsError!Config {
     if (file_names.items.len == 0) {
         return error.FilePathNotProvided;
     } else {
-        return Config{
+        return CountLinesConfig{
             .file_names = file_names,
             .threads = threads,
             .chunks_size = chunks_size,
@@ -74,9 +74,9 @@ pub fn parse_args(allocator: mem.Allocator) ParseArgsError!Config {
 }
 
 fn parse_numeric_arg(
-    iter: *std.process.ArgIterator, 
-    missing_arg_error: ParseArgsError, 
-    parse_integer_error: ParseArgsError
+        iter: *std.process.ArgIterator, 
+        missing_arg_error: ParseArgsError, 
+        parse_integer_error: ParseArgsError
 ) ParseArgsError!u64 {
     var val = iter.next() orelse return missing_arg_error;
     return std.fmt.parseInt(u64, val, 10) catch return parse_integer_error;
