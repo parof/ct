@@ -5,28 +5,9 @@ const os = std.os;
 const args = @import("./args.zig");
 const lines = @import("./lines.zig");
 const source = @import("./source.zig");
+const Runner = @import("./runner.zig").Runner;
 
 pub fn main() !void {
-    // var out_buffer: [10000]u8 = undefined;
-    // _ = out_buffer;
-    // const realpath = try fs.Dir.realpath(fs.cwd(), ".", &out_buffer);
-    // try source.main(realpath);
-    if (true) {
-        _ = try lines_main();
-    }
-}
-
-fn lines_main() !void {
-    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-    var allocator = arena.allocator();
-    defer arena.deinit();
-    if (args.parse_args(allocator)) |config| {
-        defer config.deinit();
-        try lines.run(config);
-    } else |err| {
-        try args.printErrorMessage(err, std.io.getStdErr().writer());
-        if (err != error.WantsHelp) {
-            std.os.exit(1);
-        }
-    }
+    var runner = Runner{};
+    try runner.run();
 }

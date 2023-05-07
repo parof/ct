@@ -20,7 +20,6 @@ pub fn main(absolute_path: []const u8) !void {
     std.debug.print("Time to build worklist:  {d}ns\n", .{timer.read()});
     timer.reset();
 
-
     var threads_list = std.ArrayList(std.Thread).init(allocator);
     defer threads_list.deinit();
     for (0..8) |_| {
@@ -42,21 +41,16 @@ pub fn main(absolute_path: []const u8) !void {
 
 var out_buffer: [1024]u8 = undefined;
 
-fn depthFirstWalk(
-        dir: fs.IterableDir, 
-        nesting: usize, 
-        worklist: *std.ArrayList([]const u8),
-        allocator: mem.Allocator
-) !void {
+fn depthFirstWalk(dir: fs.IterableDir, nesting: usize, worklist: *std.ArrayList([]const u8), allocator: mem.Allocator) !void {
     var it = dir.iterate();
     while (try it.next()) |entry| {
         switch (entry.kind) {
-            .File  => {
+            .File => {
                 // if (std.mem.endsWith(u8, entry.name, ".rs")) {
-                    const absolutePath = try dir.dir.realpath(entry.name, &out_buffer);
-                    const ownedSlice = try allocator.alloc(u8, absolutePath.len);
-                    @memcpy(ownedSlice, absolutePath);
-                    try worklist.*.append(ownedSlice);
+                const absolutePath = try dir.dir.realpath(entry.name, &out_buffer);
+                const ownedSlice = try allocator.alloc(u8, absolutePath.len);
+                @memcpy(ownedSlice, absolutePath);
+                try worklist.*.append(ownedSlice);
                 // }
             },
             .Directory => {
@@ -101,4 +95,4 @@ fn getLines(file_name: []const u8) !u64 {
     return lines;
 }
 
-fn dummy() void { }
+fn dummy() void {}

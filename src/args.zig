@@ -11,7 +11,7 @@ const THREADS_SHORT_FLAG: []const u8 = "-t";
 const CHUNKS_LONG_FLAG: []const u8 = "--chunks-size";
 const CHUNKS_SHORT_FLAG: []const u8 = "-c";
 
-/// Configuration for the execution of `ct`.
+/// Configuration of the command line parameters for `ct`.
 pub const Config = struct {
     input_paths: std.ArrayList([]const u8),
     threads: u64 = DEFAULT_NUMBER_OF_THREADS,
